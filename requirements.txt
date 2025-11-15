@@ -1,0 +1,6 @@
+requests==2.32.5
+aiomax==2.12.3
+aiohttp==3.9.1
+aiofiles==23.2.1
+
+python-dotenv==1.0.0

@@ -1,0 +1,62 @@
+# Многоступенчатая сборка для оптимизации размера образа
+FROM python:3.11-slim as builder
+
+# Установка системных зависимостей для сборки
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Создание виртуального окружения
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Копирование и установка зависимостей
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Финальный образ
+FROM python:3.11-slim
+
+# Метаданные образа
+LABEL maintainer="your-email@example.com"
+LABEL description="RUZ Schedule Bot for MAX Messenger"
+LABEL version="1.0"
+
+# Установка минимальных системных зависимостей
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Создание непривилегированного пользователя
+RUN useradd -m -u 1000 botuser && \
+    mkdir -p /app && \
+    chown -R botuser:botuser /app
+
+# Копирование виртуального окружения из builder
+COPY --from=builder --chown=botuser:botuser /opt/venv /opt/venv
+
+# Установка рабочей директории
+WORKDIR /app
+
+# Копирование исходного кода
+COPY --chown=botuser:botuser botmax.py .
+COPY --chown=botuser:botuser api.py .
+
+# Переключение на непривилегированного пользователя
+USER botuser
+
+# Настройка PATH для виртуального окружения
+ENV PATH="/opt/venv/bin:$PATH"
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Health check (опционально, для мониторинга)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import sys; sys.exit(0)"
+
+# Запуск приложения
+CMD ["python", "botmax.py"]
