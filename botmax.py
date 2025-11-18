@@ -16,8 +16,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-#FSM СОСТОЯНИЯ
-
 class States:
     """Состояния для ConversationHandler"""
     CHOOSING_ACTION = "choosing_action"
@@ -44,7 +42,6 @@ class ScheduleBot:
     def _setup_handlers(self):
         """Настройка обработчиков команд и сообщений"""
 
-        # команды
         @self.bot.on_command("start")
         async def start_cmd(ctx: CommandContext, cursor: FSMCursor):
             await self.start(ctx, cursor)
@@ -61,7 +58,6 @@ class ScheduleBot:
         async def cancel_cmd(ctx: CommandContext, cursor: FSMCursor):
             await self.cancel(ctx, cursor)
 
-        # callback кнопки - главное меню
         @self.bot.on_button_callback(equals("main_menu"))
         async def main_menu_cb(callback: Callback, cursor: FSMCursor):
             await self.schedule_menu_callback(callback, cursor)
@@ -78,7 +74,6 @@ class ScheduleBot:
         async def windows_cb(callback: Callback, cursor: FSMCursor):
             await self.find_windows(callback, cursor)
 
-        # callback кнопки - выбор периода
         @self.bot.on_button_callback(equals("date_today"))
         async def date_today_cb(callback: Callback, cursor: FSMCursor):
             await self.show_schedule_with_date(callback, cursor)
@@ -95,7 +90,6 @@ class ScheduleBot:
         async def date_reselect_cb(callback: Callback, cursor: FSMCursor):
             await self.date_reselect(callback, cursor)
 
-        # callback кнопки - повторный выбор
         @self.bot.on_button_callback(equals("choose_another_group"))
         async def choose_group_cb(callback: Callback, cursor: FSMCursor):
             await self.choose_another_group(callback, cursor)
@@ -104,13 +98,11 @@ class ScheduleBot:
         async def choose_teacher_cb(callback: Callback, cursor: FSMCursor):
             await self.choose_another_teacher(callback, cursor)
 
-        # callback кнопки - выбор из результатов поиска
         @self.bot.on_button_callback()
         async def handle_select_cb(callback: Callback, cursor: FSMCursor):
             if callback.payload.startswith("select_"):
                 await self.handle_selection(callback, cursor)
 
-        # обработчики ввода текста с проверкой состояния
         @self.bot.on_message(state(States.ENTERING_GROUP))
         async def process_group_msg(message: Message, cursor: FSMCursor):
             await self.process_group_input(message, cursor)
@@ -123,7 +115,6 @@ class ScheduleBot:
         async def process_windows_msg(message: Message, cursor: FSMCursor):
             await self.process_windows_input(message, cursor)
 
-        # событие запуска
         @self.bot.on_ready()
         async def on_ready():
             await self.on_startup()
@@ -131,7 +122,7 @@ class ScheduleBot:
     async def on_startup(self):
         """Выполняется при запуске бота"""
         try:
-            # установка команд
+        
             commands = [
                 BotCommand('start', 'Начать работу с ботом'),
                 BotCommand('schedule', 'Открыть меню расписания'),
@@ -143,11 +134,9 @@ class ScheduleBot:
         except Exception as e:
             logger.error(f'Ошибка при инициализации команд: {e}')
 
-    # КОМАНДЫ 
-
     async def start(self, ctx: CommandContext, cursor: FSMCursor):
         """Команда /start"""
-        cursor.clear()  # очистка состояния при старте
+        cursor.clear()  
 
         kb = KeyboardBuilder()
         kb.row(CallbackButton('📅 Открыть расписание', payload='main_menu'))
@@ -192,8 +181,6 @@ class ScheduleBot:
         kb = KeyboardBuilder()
         kb.row(CallbackButton('🔙 Назад в меню', payload='main_menu'))
         await ctx.send('Операция отменена', keyboard=kb)
-
-    # CALLBACK ОБРАБОТЧИКИ 
 
     async def schedule_menu_callback(self, callback: Callback, cursor: FSMCursor):
         """Возврат в главное меню через кнопку"""
@@ -267,8 +254,6 @@ class ScheduleBot:
             cursor.change_data(data)
             await self.ask_date_range(callback, cursor)
 
-    # ОБРАБОТЧИКИ ВВОДА 
-
     def _filter_group_results(self, results, search_query):
         """Фильтрация результатов поиска группы"""
         filtered = []
@@ -278,7 +263,7 @@ class ScheduleBot:
             label = result.get('label', '')
             label_lower = label.lower()
 
-            # тотальная чистка пустышек от любимого руз
+            # тотальная чистка пустышек от руз
             if ';' in label:
                 continue
             if 'модуль' in label_lower or 'module' in label_lower:
@@ -375,7 +360,7 @@ class ScheduleBot:
                 cursor.change_data(data)
                 await self.ask_date_range(message, cursor)
             else:
-                # несколько преподов нашли
+                # несколько преподов 
                 kb = KeyboardBuilder()
                 for r in results[:10]:
                     kb.row(CallbackButton(r['label'], payload=f"select_teacher_{r['id']}"))
@@ -445,8 +430,6 @@ class ScheduleBot:
             cursor.change_state(States.CHOOSING_DATE_RANGE)
             await message.reply('Ошибка при поиске', keyboard=kb)
 
-    # ВЫБОР ДАТЫ 
-
     async def ask_date_range(self, context, cursor: FSMCursor):
         """Показать выбор периода (context может быть Message или Callback)"""
         kb = KeyboardBuilder()
@@ -459,7 +442,7 @@ class ScheduleBot:
 
         if isinstance(context, Callback):
             await context.send('Выберите период:', keyboard=kb)
-        else:  # Message
+        else:  
             await context.reply('Выберите период:', keyboard=kb)
 
     async def show_schedule_with_date(self, callback: Callback, cursor: FSMCursor):
@@ -509,7 +492,6 @@ class ScheduleBot:
                 await callback.send('Ошибка: неизвестный тип', keyboard=kb)
                 return
 
-            # сообщ до 4000 символов
             if len(text) > 4000:
                 parts = [text[i:i+4000] for i in range(0, len(text), 4000)]
                 for i, p in enumerate(parts):
@@ -525,8 +507,6 @@ class ScheduleBot:
             kb = KeyboardBuilder()
             kb.row(CallbackButton('🔙 Назад в меню', payload='main_menu'))
             await callback.send('Ошибка при получении расписания', keyboard=kb)
-
-    # ПОИСК ОКОН 
 
     async def find_and_show_windows_from_message(self, message: Message, cursor: FSMCursor, group_id, group_name):
         """Поиск и показ окон (вызов из Message)"""
@@ -681,8 +661,6 @@ class ScheduleBot:
 
         return r
 
-    # ФОРМАТИРОВАНИЕ РАСПИСАНИЯ 
-
     def _format_group(self, name, data):
         """Форматирование расписания группы"""
         r = f'<b>📅 Расписание группы {name}</b>\n\n'
@@ -760,19 +738,17 @@ class ScheduleBot:
             r += '\n' + '─' * 36 + '\n\n'
         return r
 
-    # ЗАПУСК 
-
     def run(self):
         """Запуск бота"""
-        logger.info('Всем привет и мы начинаем!')
+        logger.info('Запуск бота...')
         try:
             self.bot.run()
         except KeyboardInterrupt:
             logger.info('Бот остановлен')
         except Exception as e:
-            logger.error(f'КРИТИЧЕСКАЯ ОШИБКА: {e}', exc_info=True)
+            logger.error(f'ОШИБКА: {e}', exc_info=True)
         finally:
-            logger.info('бот идет спатенки....')
+            logger.info('Остановка бота...')
 
 
 if __name__ == '__main__':
@@ -781,7 +757,7 @@ if __name__ == '__main__':
     BOT_TOKEN = 'f9LHodD0cOLlAyRty47gxQj3TDTIosQJCVewuRW97V99UM8-ostLgF7m1sYLBEibagmxHJwpB_FeOg0DKfyT'
 
     if BOT_TOKEN == 'YOUR_MAX_TOKEN_HERE':
-        print('укажи токен бота')
+        print('Укажи токен бота...')
         sys.exit(1)
 
     bot = ScheduleBot(BOT_TOKEN)
