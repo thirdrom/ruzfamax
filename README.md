@@ -57,7 +57,7 @@ pip install -r requirements.txt
 MAX_BOT_TOKEN=your_token_here
 ```
 
-Модифицируйте `bot.py`:
+Модифицируйте `botmax.py`:
 
 ```python
 from dotenv import load_dotenv
