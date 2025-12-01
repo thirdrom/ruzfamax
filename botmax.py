@@ -754,7 +754,7 @@ class ScheduleBot:
 if __name__ == '__main__':
     import sys
 
-    BOT_TOKEN = 'f9LHodD0cOLlAyRty47gxQj3TDTIosQJCVewuRW97V99UM8-ostLgF7m1sYLBEibagmxHJwpB_FeOg0DKfyT'
+    BOT_TOKEN = 'YOUR_MAX_TOKEN_HERE'
 
     if BOT_TOKEN == 'YOUR_MAX_TOKEN_HERE':
         print('Укажи токен бота...')
